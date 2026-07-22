@@ -19,9 +19,17 @@ def main(argv=sys.argv[1:]):
         required=True,
         nargs='+',
         help='The typesupports to be used')
+    parser.add_argument(
+        '--experimental-typesupports',
+        required=False,
+        nargs='*',
+        default=[],
+        help='The typesupports with experimental message support')
     args = parser.parse_args(argv)
 
-    generate_cpp(args.generator_arguments_file, args.typesupports)
+    generate_cpp(
+        args.generator_arguments_file, args.typesupports,
+        experimental_type_supports=args.experimental_typesupports)
 
 
 if __name__ == '__main__':

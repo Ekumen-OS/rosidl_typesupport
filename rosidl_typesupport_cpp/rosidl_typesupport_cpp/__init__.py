@@ -15,16 +15,23 @@
 from rosidl_pycommon import generate_files
 
 
-def generate_cpp(generator_arguments_file, type_supports):
+def generate_cpp(generator_arguments_file, type_supports, experimental_type_supports=None):
     """
     Generate the c++ type support to handle ROS messages.
 
     :param generator_arguments_file: Path location of the file containing the generator arguments
-    :param type_support: List of type supports to be used
+    :param type_supports: List of type supports to be used
+    :param experimental_type_supports: List of type supports with experimental message support
     """
     mapping = {
         'idl__type_support.cpp.em': '%s__type_support.cpp',
     }
+    if experimental_type_supports:
+        mapping['idl__experimental_type_support.cpp.em'] = \
+            'experimental/detail/%s__type_support.cpp'
     return generate_files(
         generator_arguments_file, mapping,
-        additional_context={'type_supports': type_supports})
+        additional_context={
+            'type_supports': type_supports,
+            'experimental_type_supports': experimental_type_supports or [],
+        })

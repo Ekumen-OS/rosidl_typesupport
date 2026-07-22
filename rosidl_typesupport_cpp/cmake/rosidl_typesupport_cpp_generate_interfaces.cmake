@@ -21,6 +21,7 @@ endif()
 set(_output_path
   "${CMAKE_CURRENT_BINARY_DIR}/rosidl_typesupport_cpp/${PROJECT_NAME}")
 set(_generated_sources "")
+set(_experimental_generated_sources "")
 foreach(_abs_idl_file ${rosidl_generate_interfaces_ABS_IDL_FILES})
   get_filename_component(_parent_folder "${_abs_idl_file}" DIRECTORY)
   get_filename_component(_parent_folder "${_parent_folder}" NAME)
@@ -28,6 +29,10 @@ foreach(_abs_idl_file ${rosidl_generate_interfaces_ABS_IDL_FILES})
   string_camel_case_to_lower_case_underscore("${_idl_name}" _header_name)
   list(APPEND _generated_sources
     "${_output_path}/${_parent_folder}/${_header_name}__type_support.cpp"
+  )
+  # Experimental variant (always generated alongside standard)
+  list(APPEND _experimental_generated_sources
+    "${_output_path}/${_parent_folder}/experimental/detail/${_header_name}__type_support.cpp"
   )
 endforeach()
 
@@ -47,6 +52,7 @@ set(target_dependencies
   ${rosidl_typesupport_cpp_GENERATOR_FILES}
   "${rosidl_typesupport_cpp_TEMPLATE_DIR}/action__type_support.cpp.em"
   "${rosidl_typesupport_cpp_TEMPLATE_DIR}/idl__type_support.cpp.em"
+  "${rosidl_typesupport_cpp_TEMPLATE_DIR}/idl__experimental_type_support.cpp.em"
   "${rosidl_typesupport_cpp_TEMPLATE_DIR}/msg__type_support.cpp.em"
   "${rosidl_typesupport_cpp_TEMPLATE_DIR}/srv__type_support.cpp.em"
   ${rosidl_generate_interfaces_ABS_IDL_FILES}
@@ -87,12 +93,28 @@ set(Python3_FIND_UNVERSIONED_NAMES FIRST)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 get_used_typesupports(typesupports "rosidl_typesupport_cpp")
+get_used_experimental_typesupports(experimental_typesupports "rosidl_typesupport_cpp")
+
+# Only add experimental outputs if there are experimental-capable type supports
+if(experimental_typesupports)
+  set(_all_generated_sources ${_generated_sources} ${_experimental_generated_sources})
+else()
+  set(_all_generated_sources ${_generated_sources})
+endif()
+
+if(experimental_typesupports)
+  set(_experimental_args "--experimental-typesupports" ${experimental_typesupports})
+else()
+  set(_experimental_args "")
+endif()
+
 add_custom_command(
-  OUTPUT ${_generated_sources}
+  OUTPUT ${_all_generated_sources}
   COMMAND Python3::Interpreter
   ARGS ${rosidl_typesupport_cpp_BIN}
   --generator-arguments-file "${generator_arguments_file}"
   --typesupports ${typesupports}
+  ${_experimental_args}
   DEPENDS ${target_dependencies}
   COMMENT "Generating C++ type support dispatch for ROS interfaces"
   VERBATIM
@@ -100,7 +122,7 @@ add_custom_command(
 
 set(_target_suffix "__rosidl_typesupport_cpp")
 
-add_library(${rosidl_generate_interfaces_TARGET}${_target_suffix} ${rosidl_typesupport_cpp_LIBRARY_TYPE} ${_generated_sources})
+add_library(${rosidl_generate_interfaces_TARGET}${_target_suffix} ${rosidl_typesupport_cpp_LIBRARY_TYPE} ${_all_generated_sources})
 if(rosidl_generate_interfaces_LIBRARY_NAME)
   set_target_properties(${rosidl_generate_interfaces_TARGET}${_target_suffix}
     PROPERTIES OUTPUT_NAME "${rosidl_generate_interfaces_LIBRARY_NAME}${_target_suffix}")

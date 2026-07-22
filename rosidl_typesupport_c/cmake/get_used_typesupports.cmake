@@ -68,3 +68,49 @@ function(get_used_typesupports var typesupport_type)
   message(STATUS "Using ${msg_used_typesupports} ${typesupport_type}: ${selected_typesupports}")
   set(${var} "${selected_typesupports}" PARENT_SCOPE)
 endfunction()
+
+#
+# Get the concrete typesupport names that support experimental messages.
+#
+# The result is the intersection of the selected/available typesupports
+# and those registered as experimental-capable via the
+# "available_experimental_typesupports" ament index resource.
+#
+# :param var: the output variable name for the experimental typesupport names
+# :type var: list of strings
+# :param typesupport_type: the type of the typesupport to look for
+# :type typesupport_type: string
+#
+# @public
+#
+function(get_used_experimental_typesupports var typesupport_type)
+  # Get all available/selected typesupports first
+  get_used_typesupports(_all_typesupports "${typesupport_type}")
+
+  # Query for experimental-capable typesupports registered in the ament index
+  ament_index_get_resources(_experimental_available "available_experimental_typesupports")
+
+  # If none are registered, return empty
+  if(_experimental_available STREQUAL "")
+    set(${var} "" PARENT_SCOPE)
+    message(STATUS "No experimental-capable ${typesupport_type} found")
+    return()
+  endif()
+
+  # Intersect: only include experimental-capable typesupports that are
+  # actually selected/available
+  set(_result "")
+  foreach(_ts ${_all_typesupports})
+    if(${_ts} IN_LIST _experimental_available)
+      list(APPEND _result ${_ts})
+    endif()
+  endforeach()
+
+  if(_result STREQUAL "")
+    message(STATUS "No experimental-capable ${typesupport_type} in use")
+  else()
+    message(STATUS "Using experimental ${typesupport_type}: ${_result}")
+  endif()
+
+  set(${var} "${_result}" PARENT_SCOPE)
+endfunction()
