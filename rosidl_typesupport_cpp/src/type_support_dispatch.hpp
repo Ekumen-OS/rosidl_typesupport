@@ -26,6 +26,7 @@
 #include "rcutils/error_handling.h"
 #include "rcutils/snprintf.h"
 #include "rosidl_typesupport_c/type_support_map.h"
+#include "rosidl_runtime_c/message_type_support_struct.h"
 
 namespace rosidl_typesupport_cpp
 {
@@ -37,7 +38,9 @@ const TypeSupport *
 get_typesupport_handle_function(
   const TypeSupport * handle, const char * identifier) noexcept
 {
-  if (strcmp(handle->typesupport_identifier, identifier) == 0) {
+  if (rosidl_runtime_c_typesupport_identifier_matches(
+      handle->typesupport_identifier, identifier))
+  {
     return handle;
   }
 
@@ -48,7 +51,9 @@ get_typesupport_handle_function(
     const type_support_map_t * map = \
       static_cast<const type_support_map_t *>(handle->data);
     for (size_t i = 0; i < map->size; ++i) {
-      if (strcmp(map->typesupport_identifier[i], identifier) != 0) {
+      if (!rosidl_runtime_c_typesupport_identifier_matches(
+          map->typesupport_identifier[i], identifier))
+      {
         continue;
       }
       rcpputils::SharedLibrary * lib = nullptr;
@@ -57,7 +62,7 @@ get_typesupport_handle_function(
         char library_basename[1024];
         int ret = rcutils_snprintf(
           library_basename, 1023, "%s__%s",
-          map->package_name, identifier);
+          map->package_name, map->typesupport_identifier[i]);
         if (ret < 0) {
           RCUTILS_SET_ERROR_MSG("Failed to format library name");
           return nullptr;
