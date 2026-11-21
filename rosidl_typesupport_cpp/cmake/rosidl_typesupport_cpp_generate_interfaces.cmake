@@ -19,6 +19,8 @@ if(NOT TARGET ${rosidl_generate_interfaces_TARGET}__rosidl_generator_cpp)
 endif()
 
 find_package(rosidl_cmake REQUIRED)
+get_used_typesupports(typesupports "rosidl_typesupport_cpp")
+list(FIND typesupports "rosidl_typesupport_xcdr_cpp" _xcdr_support_index)
 
 set(_output_path
   "${CMAKE_CURRENT_BINARY_DIR}/rosidl_typesupport_cpp/${PROJECT_NAME}")
@@ -31,6 +33,10 @@ foreach(_abs_idl_file ${rosidl_generate_interfaces_ABS_IDL_FILES})
   list(APPEND _generated_sources
     "${_output_path}/${_parent_folder}/${_header_name}__type_support.cpp"
   )
+  if(NOT _xcdr_support_index EQUAL -1)
+    list(APPEND _generated_sources
+      "${_output_path}/${_parent_folder}/views/${_header_name}__region_type_support.cpp")
+  endif()
 endforeach()
 
 set(_dependency_files "")
@@ -48,6 +54,7 @@ set(target_dependencies
   ${rosidl_typesupport_cpp_GENERATOR_FILES}
   "${rosidl_typesupport_cpp_TEMPLATE_DIR}/action__type_support.cpp.em"
   "${rosidl_typesupport_cpp_TEMPLATE_DIR}/idl__type_support.cpp.em"
+  "${rosidl_typesupport_cpp_TEMPLATE_DIR}/idl__region_type_support.cpp.em"
   "${rosidl_typesupport_cpp_TEMPLATE_DIR}/msg__type_support.cpp.em"
   "${rosidl_typesupport_cpp_TEMPLATE_DIR}/srv__type_support.cpp.em"
   ${rosidl_generate_interfaces_ABS_IDL_FILES}
@@ -95,7 +102,6 @@ else()
   set(_dep_explicit_only "")
 endif()
 
-get_used_typesupports(typesupports "rosidl_typesupport_cpp")
 add_custom_command(
   OUTPUT ${_generated_sources}
   COMMAND Python3::Interpreter
@@ -119,6 +125,9 @@ set_target_properties(${rosidl_generate_interfaces_TARGET}${_target_suffix}
   PROPERTIES
     DEFINE_SYMBOL "ROSIDL_TYPESUPPORT_CPP_BUILDING_DLL"
     CXX_STANDARD 17)
+if(NOT _xcdr_support_index EQUAL -1)
+  set_property(TARGET ${rosidl_generate_interfaces_TARGET}${_target_suffix} PROPERTY CXX_STANDARD 20)
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   target_compile_options(${rosidl_generate_interfaces_TARGET}${_target_suffix}

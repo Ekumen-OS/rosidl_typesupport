@@ -25,6 +25,8 @@ def generate_cpp(generator_arguments_file, type_supports):
     mapping = {
         'idl__type_support.cpp.em': '%s__type_support.cpp',
     }
+    if 'rosidl_typesupport_xcdr_cpp' in type_supports:
+        mapping['idl__region_type_support.cpp.em'] = 'views/%s__region_type_support.cpp'
     return generate_files(
         generator_arguments_file, mapping,
         additional_context={'type_supports': type_supports})
